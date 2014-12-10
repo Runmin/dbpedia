@@ -33,11 +33,14 @@ def overlapping_word(abstract_hash):
     for key in abstract_hash:
 	if count == 0:
 	    match = abstract_hash[key]
+            print "match is " + match
             word_list = match.split(' ')
  	    count +=1
         else:
             save_list = []
 	    against = abstract_hash[key]
+            if len(against)< 1:
+		continue
             print "against is : " + against 
             for word in word_list:
                 if word in against:
@@ -45,8 +48,16 @@ def overlapping_word(abstract_hash):
 			save_list.append(word)
 	    word_list = save_list
     print "[overlapping_word] result"
-    print "* " + " ".join(word_list)
+    return word_list
     
+def rm_defined_word(word_list):
+    new_list = []
+    black_list = ['is','a','an','the']
+    for word in word_list:
+	if word not in black_list:
+		new_list.append(word)
+    return new_list
+
 def parse_dbpedia(key_word):
     url = "http://dbpedia.org/page/"
     url += key_word
@@ -79,7 +90,9 @@ def understand_list_word(list_key_word):
 		result = parse_dbpedia(key_word.upper())
         abstract_hash[key_word] = result
     #print_hash(abstract_hash)
-    overlapping_word(abstract_hash)    
+    l = overlapping_word(abstract_hash)    
+    l = rm_defined_word(l)
+    print " ".join(l) + " wikipedia"
 
 def get_abstract(html):
     pattern = "<p>"
@@ -117,11 +130,12 @@ html = "afdadsfasdf<p>roger federer</p>"
 c = get_abstract(html)
 print c
 """
-key_word_list = ["ucla","ucsd","ucsb","ucb"]
 key_word_list = ["Ferrari","Aston Martin","Porsche"]
 key_word_list = ["ACM","IEEE"]
-key_word_list = ["kobe byrant","allen iverson"]
-
 key_word_list = ["roger federer","rafael nadal", "novak djokovic"]
+
+key_word_list = ["ucla","ucsd","ucsb","ucb"]
+key_word_list = ["kobe byrant","allen iverson"]
+key_word_list = ["Tennis","Basketball","Soccer"]
 
 understand_list_word(key_word_list)
