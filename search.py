@@ -102,7 +102,7 @@ def get_first_sentence(sen):
     sen_list = sen.split('.')
     return_sen = ""
     for s in sen_list:
-	if len(return_sen) < 15:
+	if len(return_sen) < 50:
 		return_sen += s
     return return_sen
 
@@ -130,7 +130,8 @@ def overlapping_word(abstract_hash):
 	    against = abstract_hash[key]
             if len(against)< 1:
 		continue
-            #print "against is : " + against 
+            print "against is : " + against
+            against = against.split(' ') 
             for word in word_list:
                 if word in against:
 			#print "true" + word
@@ -141,11 +142,64 @@ def overlapping_word(abstract_hash):
     
 def rm_defined_word(word_list):
     new_list = []
-    black_list = ['is','a','an','the']
+    black_list = ['i','is','a','an','the']
     for word in word_list:
 	if word not in black_list:
 		new_list.append(word)
     return new_list
+
+def rm_coma(sen):
+    new_sen = re.sub(r','," ",sen)
+    return new_sen
+
+def rm_last_s_and_space(sen):
+    new_list = []
+    word_list = sen.split(' ')
+    for x in word_list:
+	if x == "":
+		continue
+	elif x[-1] == "s":
+		s = x[:-1]
+                new_list.append(s)
+        else:
+		new_list.append(x)
+    return " ".join(new_list)
+
+def check_if_disambiguous(html):
+    l = parse_abstract(html)
+    if len(l) > 1:
+	return False
+    else:
+	return True
+
+
+def parse_out_url(html):
+    result = re.search(r'xmlns:dbpedia-owl="http:\/\/dbpedia.org\/ontology\/".*<small>',html)
+    url = result.group(0)
+    result = re.search(r'href=.*',url)
+    url = result.group(0)
+    url = url[6:-9]
+    return url
+
+def go_to_top_link(html):
+    print "go to top link"
+    url =  parse_out_url(html)    
+    conn = urllib.urlopen(url)
+    html = conn.read()
+    abstract= parse_abstract(html)    
+
+def parse_abstract(html):
+    
+    abstract = get_abstract(html)
+    print abstract
+    succinct_abstract = rm_parenthesis(abstract)
+    succinct_abstract = rm_defined_pattern(succinct_abstract)
+    #print "[parse_dbpedia]" + succinct_abstract
+    first_sentence = get_first_sentence(succinct_abstract)
+    first_sentence = rm_coma(first_sentence)
+    first_sentence = rm_last_s_and_space(first_sentence)
+    print "[parse_dbpedia]" + first_sentence
+    return first_sentence
 
 def parse_dbpedia(key_word):
     url = "http://dbpedia.org/page/"
@@ -153,20 +207,22 @@ def parse_dbpedia(key_word):
     print "[parse_dbpedia] URL:" + url
     conn = urllib.urlopen(url)
     html = conn.read()
-    abstract = get_abstract(html)
-    print abstract
-    succinct_abstract = rm_parenthesis(abstract)
-    succinct_abstract = rm_defined_pattern(succinct_abstract)
-    #print "[parse_dbpedia]" + succinct_abstract
-    first_sentence = get_first_sentence(succinct_abstract)
-    print "[parse_dbpedia]" + first_sentence
-    return first_sentence
+    
+    if check_if_disambiguous(html):
+	sen = go_to_top_link(html)
+        return sen
+    else:
+        first_sentence = parse_abstract(html)
+        return first_sentence
+
+def test_go_top_link():
+    key_word = 'ACM'
+    parse_dbpedia(key_word)
 
 def print_hash(hash_input):
     for key in hash_input:
 	print key + ":"
         print hash_input[key]
-
 
 def understand_list_word(list_key_word):
     abstract_hash= {}
@@ -201,7 +257,11 @@ def parse_entity_result():
         print s
 
 def change_into_google_string(string_list):
-    sen = "+".join(string_list)
+    new_list = []
+    for word in string_list:
+	if word != "":
+		new_list.append(word)
+    sen = "+".join(new_list)
     return sen
 
 def search_google_and_return_title(string_list,length):
@@ -239,7 +299,7 @@ for i in range(2,len(sys.argv)):
     key_word_list.append(sys.argv[i])
 print key_word_list
 
-
+"""
 key_word_list = ["ACM","IEEE"]
 
 key_word_list = ["Tennis","Basketball","Soccer"]
@@ -251,6 +311,10 @@ key_word_list = ["Harvard University","Stanford University"]
 key_word_list = ["Bill Gates","Steven Jobs"]
 key_word_list = ["Barack Obama","George Washington"]
 key_word_list = ["Brad Pitt","Tom Hanks"]
+"""
+
+#test_go_top_link()
+#sys.exit()
 l = understand_list_word(key_word_list)
 search_google_and_return_title(l,length)
 parse_entity_result()
